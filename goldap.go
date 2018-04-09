@@ -7,7 +7,25 @@ import (
 	"os"
 
 	"github.com/go-ldap/ldap"
+	getopt "github.com/pborman/getopt/v2"
 )
+
+var (
+	hostname     = "ldap.puppetlabs.com"
+	port         = 389
+	searchBase   = "dc=puppetlabs,dc=com"
+	userUID      = os.Getenv("puppetpass_username")
+	userDN       = fmt.Sprintf("uid=%s,ou=users,dc=puppetlabs,dc=com", userUID)
+	userPassword = os.Getenv("puppetpass_password")
+)
+
+func init() {
+	getopt.FlagLong(&hostname, "hostname", 'h', "hostname of the LDAP server")
+	getopt.FlagLong(&port, "port", 0, "port of LDAP server")
+	getopt.FlagLong(&searchBase, "search-base", 'b', "base fo LDAP search")
+	getopt.FlagLong(&userDN, "user-dn", 'u', "DN of user to connect as")
+	getopt.FlagLong(&userPassword, "password", 'p', "Password of user to connect as")
+}
 
 func printEntry(entry *ldap.Entry) {
 	fmt.Printf("dn: %s\n", entry.DN)
@@ -23,18 +41,15 @@ func printEntry(entry *ldap.Entry) {
 }
 
 func main() {
-	hostname := "ldap.puppetlabs.com"
-	port := 389
-	userDn := fmt.Sprintf("uid=%s,ou=users,dc=puppetlabs,dc=com", os.Getenv("puppetpass_username"))
-	password := os.Getenv("puppetpass_password")
-	searchBase := "dc=puppetlabs,dc=com"
+	getopt.Parse()
+	args := getopt.Args()
 
-	if len(os.Args) < 2 {
+	if len(args) < 1 {
 		log.Fatalln("usage: goldap <query> [attribute attribute...]")
 	}
 
-	query := os.Args[1]
-	desiredAttributes := os.Args[2:]
+	query := args[0]
+	desiredAttributes := args[1:]
 
 	conn, err := ldap.Dial("tcp", fmt.Sprintf("%s:%d", hostname, port))
 	if err != nil {
@@ -53,7 +68,7 @@ func main() {
 	}
 
 	// Authenticate
-	err = conn.Bind(userDn, password)
+	err = conn.Bind(userDN, userPassword)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -81,5 +96,4 @@ func main() {
 			}
 		}
 	}
-
 }
