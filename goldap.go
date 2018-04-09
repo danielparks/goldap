@@ -25,6 +25,7 @@ func init() {
 	getopt.FlagLong(&searchBase, "search-base", 'b', "base fo LDAP search")
 	getopt.FlagLong(&userDN, "user-dn", 'u', "DN of user to connect as")
 	getopt.FlagLong(&userPassword, "password", 'p', "Password of user to connect as")
+	getopt.SetParameters("query [attribute [attribute ...]]")
 }
 
 func printEntry(entry *ldap.Entry) {
@@ -45,7 +46,8 @@ func main() {
 	args := getopt.Args()
 
 	if len(args) < 1 {
-		log.Fatalln("usage: goldap <query> [attribute attribute...]")
+		getopt.PrintUsage(os.Stderr)
+		return
 	}
 
 	query := args[0]
